@@ -82,5 +82,6 @@ Blockchain.prototype.chainIsValid = function(blockchain) {
 
 	return validChain;
 };
+const bitcoin = new Blockchain();
 
-module.exports = Blockchain;
+module.exports = bitcoin;

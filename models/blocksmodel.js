@@ -7,9 +7,9 @@ var blockSchema = new mongoose.Schema({
         type: Number
     },
    
-     transaction: {
+     transactions: {
         required:true,
-        type: String
+        type: Array
     },
      prevHash: {
         required:false,

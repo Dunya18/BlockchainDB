@@ -1,26 +1,28 @@
 // multiple port
 const process = require('process');
 const portt = process.argv[2];
-// import uuid
-//const uuid = require('uuid');
-//const nodeAddress = uuid().split('-').join('');
+const Try = require('../models/blocksmodel')
+
 
 // import request promise library that allows us to make requests to all the other nodes in our network
 const rp = require('request-promise');
 
 // import our blockchain
-const Blockchain = require('./blockchain');
-const bitcoin = new Blockchain();
+/* const Blockchain = require('./blockchain');
+const bitcoin = new Blockchain(); */
 
 // import express package
 const express = require('express');
 const app = express();
+const bitcoin = require('../dev/blockchain');
 
 // import bodyparser ( to recieve json data)
 const bodyParser = require('body-parser');
-const { Mongoose } = require('mongoose');
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
+
+   const mongoose = require('mongoose')
 // multiple database
 var dbs = {
     'localhost:3001': {
@@ -30,74 +32,33 @@ var dbs = {
         uri: 'mongodb://localhost/blockchain2'
     }
 };
-//done multiple database
-// mongo connection ---------------------
-
-    const mongoose = require('mongoose')
-  //  mongoose.connect('mongodb://localhost/blockchain1',{useNewUrlParser:true})
-   // const db = mongoose.connection
-   // db.on('error',(error)=> console.error(error))
-   // db.once('open',()=> console.log('Connected to Database'))
-
-// mongo connection is done -------------
-
-const blockRouter = require('../routes/blocksroute')
-app.use('/blockchain',function (req, res, next){
+// mongo connection function -------------
+app.use(function (req, res, next){
     console.log(req.headers.host);
     console.log(dbs[req.headers.host].uri);
     mongoose.connect(dbs[req.headers.host].uri,{useNewUrlParser:true})
     const db = mongoose.connection
     db.on('error',(error)=> console.error(error))
     db.once('open',()=> console.log('Connected to Database'))
-    next()
-},blockRouter)
+    next()})
+// mongo db conn done 
+const blockRouter = require('../routes/blocksroute')
+app.use('/blockchain',blockRouter)
 
 const transRouter = require('../routes/transroute')
 
 app.use('/transaction',transRouter);
 
-const port = process.env.PORT || 3000;
+const mineRouter = require('../routes/mineroute')
 
-/*app.get('/blockchain', function (req, res) {
-    res.send(bitcoin);
-});
+app.use('/mine',mineRouter);
 
-app.post('/transaction', function(req, res) {
-  const newTransaction = req.body;
-  bitcoin.addTransactionToPendingTransaction(newTransaction);
-});*/
-
-app.get('/mine', function(req, res) {
-    const lastBlock = bitcoin.getLastBlock();
-    const previousBlockHash = lastBlock['hash'];
-    const currentBlockData ={
-        transactions : bitcoin.pendingTransactions,
-        index : lastBlock['index'] + 1
-    };
-    const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
-    const blockHash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-    const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash,blockHash);
-    const requestPromises = [];
-    bitcoin.networkNodes.forEach(networkNodeUrl => {
-       const requestOptions = {
-         uri : networkNodeUrl +'/receive-new-block',
-         method : 'POST',
-         body : {newBlock : newBlock},
-         json : true
-       };
-       requestPromises.push(rp(requestOptions));
-    });
-    Promise.all(requestPromises).then(data => {
- res.json({
-        note : "New block mined succefully",
-        block : newBlock
-    });
-    });
-   
-});
-
-app.post('/receive-new-block',function(req,res){
+app.post('/receive-new-block',async function(req,res){
   const newBlock = req.body.newBlock;
+   try{
+     const blocks = await Try(newBlock);
+     const newblocks = blocks.save();
+ }catch(err){console.log(err);}
   const lastBlock = bitcoin.getLastBlock();
   const correctHash = lastBlock.hash === newBlock.previousBlockHash;
   const correctIndex = lastBlock['index'] + 1 === newBlock['index'];
@@ -116,6 +77,8 @@ else{
     });
 }
 });
+ 
+
 
  app.post('/register-and-broadcast-node', function(req,res){
 const newNodeUrl = req.body.newNodeUrl;
@@ -239,6 +202,7 @@ Promise.all(regNodesPromises).then(data =>{
        res.json({note : 'Transaction created and broadcast successfully'});
   });
 });
+
 app.listen(portt,()=>{
     console.log(` server is running at port ${portt}`);
 });

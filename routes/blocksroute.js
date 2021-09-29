@@ -13,7 +13,8 @@ try{
 }
 });
 
-router.post('/',async(req,res)=>{
+
+/*router.post('/',async(req,res)=>{
     const blocks = new Try ({
      index: req.body.index,
      transaction: req.body.transaction,
@@ -31,5 +32,5 @@ router.post('/',async(req,res)=>{
 
   res.status(500).json({message:err.message})
 }
-})
+})*/
 module.exports = router
