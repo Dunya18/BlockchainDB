@@ -25,4 +25,4 @@ var blockSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('dou', blockSchema)
+module.exports = mongoose.model('block', blockSchema)

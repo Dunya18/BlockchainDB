@@ -8,6 +8,7 @@ router.get('/',async (req,res)=>{
 try{
    const blocks = await Try.find();
    console.log(blocks)
+   res.send(blocks);
 }catch(err){
   res.status(500).json({message:err.message})
 }
