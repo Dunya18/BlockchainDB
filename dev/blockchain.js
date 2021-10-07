@@ -1,3 +1,5 @@
+// call block model
+const blockchainModel = require('../models/blocksmodel');
 
 //const uuid = require('uuid');
 const { v4: uuidv4 } = require('uuid');
@@ -9,25 +11,37 @@ function Blockchain(){
     this.currentNodeUrl = currentNodeUrl;
     this.networkNodes = [];
     // genesis block
-    this.createNewBlock(100, '0', '0'); 
+  //  this.createNewBlock(100, '0', '0'); 
 }
 
-Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash){
+Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash, index){
+    
     const newBlock = {
-        index : this.chain.length + 1,
+        index : index,//this.chain.length + 1,
         timestamp : Date.now(),
-        transactions : this.pendingTransactions,
-        nonce : nonce,
-        hash : hash,
         previousBlockHash : previousBlockHash,
+                transactions : this.pendingTransactions,
+
+        hash : hash,
+        nonce : nonce 
     };
+     let addBlock = new blockchainModel(newBlock)
+    addBlock.save((err) =>{if (err) console.log(err);
+    console.log('saved succefully')}); 
     this.pendingTransactions = [];
     this.chain.push(newBlock);
     return newBlock;
 }
 
-Blockchain.prototype.getLastBlock = function () { 
- return this.chain[this.chain.length - 1];
+Blockchain.prototype.getLastBlock = function (callback) { 
+    // get last block from database
+  return blockchainModel.findOne({},null,{sort : {_id : -1}, limit : 1}, (err,block)=>{
+      if(err){return console.log('can not find the last block')}
+      else{
+    return callback(block);
+}
+  })
+ //return this.chain[this.chain.length - 1];
 }
 
 Blockchain.prototype.createNewTransaction = function (amount, sender, recipient) {
@@ -41,7 +55,7 @@ Blockchain.prototype.createNewTransaction = function (amount, sender, recipient)
 };
  Blockchain.prototype.addTransactionToPendingTransaction = function(transactionObj){
       	this.pendingTransactions.push(transactionObj);
-    return this.getLastBlock()['index'] + 1;
+    return console.log('yo');//console.log(this.getLastBlock((lastBlock) =>{lastBlock.index +1}));
  }
 
 Blockchain.prototype.hashBlock = function(previousBlockHash, currentBlockData, nonce) {

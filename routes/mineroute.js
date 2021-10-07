@@ -9,19 +9,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 router.get('/', async function(req, res) {
-    const lastBlock = bitcoin.getLastBlock();
-    const previousBlockHash = lastBlock['hash'];
+    console.log('we are here on first');
+   bitcoin.getLastBlock((lastBlock) =>{
+  //  if(lastBlock){
+    console.log('we are here');
+    if(lastBlock){
+    var previousBlockHash = lastBlock.hash;
+    var index = lastBlock.index + 1;
+  }
+    else{
+      var previousBlockHash = 0;
+      var index = 0;
+    }
+    //console.log(previousBlockHash);
     const currentBlockData ={
-        transactions : bitcoin.pendingTransactions,
-        index : lastBlock['index'] + 1
+    transactions : bitcoin.pendingTransactions,
+        index : lastBlock.index + 1
     };
     const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
     const blockHash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-    const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash,blockHash);
- try{
-     const blocks = await Try(newBlock);
-     const newblocks = blocks.save();
- }catch(err){console.log(err);}
+    const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash,blockHash,index);
+    
     const requestPromises = [];
     bitcoin.networkNodes.forEach(networkNodeUrl => {
        const requestOptions = {
@@ -36,9 +44,17 @@ router.get('/', async function(req, res) {
  res.json({
         note : "New block mined succefully",
         block : newBlock
+    }); 
+     });
+   // }
     });
-    });
-   
+  
+    
+ /* try{
+     const blocks = await Try(newBlock);
+     const newblocks = blocks.save();
+ }catch(err){console.log(err);} */
+    
 });
 
 

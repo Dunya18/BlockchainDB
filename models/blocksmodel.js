@@ -6,13 +6,16 @@ var blockSchema = new mongoose.Schema({
         required:true,
         type: Number
     },
-   
+    timestamp : {
+        type : Date
+    },
+
      transactions: {
         required:true,
         type: Array
     },
-     prevHash: {
-        required:false,
+     previousBlockHash: {
+        required:true,
         type: String
     },
      hash: {

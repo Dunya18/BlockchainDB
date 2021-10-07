@@ -16,6 +16,7 @@ router.post('/', async function(req, res) {
    try{
      const transs = await Trans(newTransaction);
      const newtransactions = transs.save();
+
  }catch(err){console.log(err);}
   bitcoin.addTransactionToPendingTransaction(newTransaction);
   const requestPromises = [];
