@@ -157,8 +157,8 @@ else{
  /**************************************************************************************************** */
 
  app.get('/consensus',async function(req, res) {
-   console.log(bitcoin.networkNodes);
-   var blockchainlength = 0;
+
+  var blockchainlength = 0;
 	const requestPromises = [];
 	bitcoin.networkNodes.forEach(networkNodeUrl => {
 		const requestOptions = {
@@ -179,8 +179,7 @@ else{
 
 		blockchains.forEach(blockchain => {
        blockchainlength = blockchain.length;
-      console.log('here is the blockchain  : ',blockchainlength);
-       console.log('here is the blockchain max lenght : ',maxChainLength);
+       
     
 		 	if ( blockchainlength > maxChainLength) {
 				maxChainLength = blockchainlength;
@@ -208,9 +207,10 @@ else{
       for(var i=0;i<blockchainlength;i++)
       {
         var newblockchain = newLongestChain[i];
+        bitcoin.pendingTransactions = newblockchain['transactions'];
       bitcoin.createNewBlock(newblockchain['nonce'],newblockchain['previousBlockHash'],newblockchain['hash'],i);
       };
-    
+            bitcoin.pendingTransactions = [];
 			res.json({
 				note: 'This chain has been replaced.'
 			});
