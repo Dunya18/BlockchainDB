@@ -9,22 +9,38 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 router.get('/', async function(req, res) {
-    console.log('we are here on first');
-   bitcoin.getLastBlock((lastBlock) =>{
-  //  if(lastBlock){
-    console.log('we are here');
+
+  bitcoin.getLastBlock((lastBlock) =>{
+   
     if(lastBlock){
     var previousBlockHash = lastBlock.hash;
     var index = lastBlock.index + 1;
   }
     else{
       var previousBlockHash = 0;
-      var index = 0;
+      var index = 1;
+      var currentTransactions = bitcoin.pendingTransactions;
+      bitcoin.pendingTransactions = [];
+  const newBlock = bitcoin.createNewBlock(100, '0', '0','0'); 
+  const requestsPromises = [];
+    bitcoin.networkNodes.forEach(networkNodeUrl => {
+       const requestsOptions = {
+         uri : networkNodeUrl +'/receive-genesis-block',
+         method : 'POST',
+         body : {newBlock : newBlock},
+         json : true
+       };
+       requestsPromises.push(rp(requestsOptions));
+    });
+    Promise.all(requestsPromises).then(data => {
+
+})
+  bitcoin.pendingTransactions = currentTransactions;
     }
-    //console.log(previousBlockHash);
+
     const currentBlockData ={
     transactions : bitcoin.pendingTransactions,
-        index : lastBlock.index + 1
+        index : index 
     };
     const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
     const blockHash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
@@ -45,15 +61,9 @@ router.get('/', async function(req, res) {
         note : "New block mined succefully",
         block : newBlock
     }); 
-     });
-   // }
-    });
-  
-    
- /* try{
-     const blocks = await Try(newBlock);
-     const newblocks = blocks.save();
- }catch(err){console.log(err);} */
+     })
+   
+    })
     
 });
 

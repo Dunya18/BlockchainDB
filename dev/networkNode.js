@@ -1,17 +1,14 @@
 // multiple port
 const process = require('process');
 const portt = process.argv[2];
-const Try = require('../models/blocksmodel')
+const Theblock = require('../models/blocksmodel')
 const Trans = require('../models/transmodel')
 const Net = require('../models/networkmodel')
 
 
-// import request promise library that allows us to make requests to all the other nodes in our network
-const rp = require('request-promise');
 
-// import our blockchain
-/* const Blockchain = require('./blockchain');
-const bitcoin = new Blockchain(); */
+// import request promise library that allows us to make requests to all the other nodes in our network
+const rp = require('request-promise')
 
 // import express package
 const express = require('express');
@@ -45,25 +42,7 @@ var connDB = function (req, res, next){
     // mongo db conn done 
 
 // create genesis block *****************************************************************************************
-app.post('/genesis-block', function(req,res){
-  const newBlock = bitcoin.createNewBlock(100, '0', '0','0'); 
-  const requestPromises = [];
-    bitcoin.networkNodes.forEach(networkNodeUrl => {
-       const requestOptions = {
-         uri : networkNodeUrl +'/receive-genesis-block',
-         method : 'POST',
-         body : {newBlock : newBlock},
-         json : true
-       };
-       requestPromises.push(rp(requestOptions));
-    });
-    Promise.all(requestPromises).then(data => {
- res.json({
-        note : "Genesis block added succefully",
-        block : newBlock
-    }); 
-})
-});
+
 app.post('/receive-genesis-block', function(req,res){
     bitcoin.createNewBlock(100, '0', '0','0'); 
     res.json({
@@ -72,13 +51,13 @@ app.post('/receive-genesis-block', function(req,res){
 
 })
 
-/**************************************************************************************************** */
+
 
 // get blockchain from db ********************************************************************************
 const blockRouter = require('../routes/blocksroute')
 app.use('/blockchain',blockRouter)
 
-/****************************************************************************************************** */
+
 
 
 // add transaction to db *************************************************************************************
@@ -96,7 +75,7 @@ app.post('/transaction', async function (req,res){
    res.json({note : 'Transaction created and broadcast successfully'})
 })
 
-/************************************************************************************************************* */
+
 
 // add new block to db  *****************************************************************************************
 const mineRouter = require('../routes/mineroute');
@@ -105,7 +84,7 @@ app.use('/mine',mineRouter);
 app.post('/receive-new-block',async function(req,res){
   const newBlock = req.body.newBlock;
    try{
-     const blocks = await Try(newBlock);
+     const blocks = await Theblock(newBlock);
      const newblocks = blocks.save();
  }catch(err){console.log(err);}
     bitcoin.getLastBlock((lastBlock) =>{
@@ -141,7 +120,7 @@ else{
 
   if(nodeNotAlreadyPresent && notCurrentNode ) {
      bitcoin.networkNodes.push(newNodeUrl);
-     console.log('im here');
+
        /*      try{
    const nodeUrl = await Net({newNodeUrl});
    const newNode = nodeUrl.save();
@@ -177,7 +156,9 @@ else{
  });
  /**************************************************************************************************** */
 
- app.get('/consensus', function(req, res) {
+ app.get('/consensus',async function(req, res) {
+   console.log(bitcoin.networkNodes);
+   var blockchainlength = 0;
 	const requestPromises = [];
 	bitcoin.networkNodes.forEach(networkNodeUrl => {
 		const requestOptions = {
@@ -188,40 +169,55 @@ else{
 
 		requestPromises.push(rp(requestOptions));
 	});
-
+    const blocks = await Theblock.find();
 	Promise.all(requestPromises)
 	.then(blockchains => {
-    console.log('here is all the blockchains :',blockchains);
-		const currentChainLength = bitcoin.chain.length;
+		let currentChainLength = blocks.length;
 		let maxChainLength = currentChainLength;
 		let newLongestChain = null;
 		let newPendingTransactions = null;
 
 		blockchains.forEach(blockchain => {
-      console.log('here is the blockchain : ',blockchain);
-		/* 	if (blockchain.chain.length > maxChainLength) {
-				maxChainLength = blockchain.chain.length;
-				newLongestChain = blockchain.chain;
-				newPendingTransactions = blockchain.pendingTransactions;
-			}; */
+       blockchainlength = blockchain.length;
+      console.log('here is the blockchain  : ',blockchainlength);
+       console.log('here is the blockchain max lenght : ',maxChainLength);
+    
+		 	if ( blockchainlength > maxChainLength) {
+				maxChainLength = blockchainlength;
+				newLongestChain = blockchain;
+				newPendingTransactions = blockchain['transactions'];
+			}; 
 		});
 
-
+    
 		if (!newLongestChain || (newLongestChain && !bitcoin.chainIsValid(newLongestChain))) {
 			res.json({
-				note: 'Current chain has not been replaced.',
-				chain: bitcoin.chain
+				note: 'Current chain has not been replaced.'
 			});
 		}
-		else {
+		 else {
 			bitcoin.chain = newLongestChain;
 			bitcoin.pendingTransactions = newPendingTransactions;
+      // first we gotta delete the corrupted blockchain
+      
+    Theblock.remove({},function(err,block){
+      if(err){return res.json(err);}
+      if(!block){return res.send(404);}
+    })
+    // replace it with the correct one
+      for(var i=0;i<blockchainlength;i++)
+      {
+        var newblockchain = newLongestChain[i];
+      bitcoin.createNewBlock(newblockchain['nonce'],newblockchain['previousBlockHash'],newblockchain['hash'],i);
+      };
+    
 			res.json({
-				note: 'This chain has been replaced.',
-				chain: bitcoin.chain
+				note: 'This chain has been replaced.'
 			});
 		}
+  
 	});
+
 });
 
 
